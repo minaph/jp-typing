@@ -4,8 +4,9 @@ const gameState = {
   startTime: 0,
   elapsedTime: 0,
   timer: null,
-  totalTyped: 0,
-  correctTyped: 0,
+  totalTyped: 0, // 互換性のため残す（後で削除可能）
+  correctTyped: 0, // 互換性のため残す（後で削除可能）
+  committedChars: 0, // 文字数空間: 確定挿入文字数（速度計算用）
   currentIndex: 0,
   sentences: [],
   originalSentences: [],
@@ -15,6 +16,13 @@ const gameState = {
   randomizeOrder: false,
   textHash: "", // テキストのハッシュ値
   completedSentences: new Set(), // 完了した文章のインデックス
+};
+
+// 寄与判定カウンタ（打鍵数空間の正確率用）
+const contribution = {
+  positive: 0,  // 距離を縮めた編集（寄与）
+  negative: 0,  // 距離を広げた編集（非寄与）
+  neutral: 0,   // 距離が変わらなかった編集
 };
 
 // 進捗保存用の変数
@@ -74,6 +82,25 @@ function levenshteinDistance(a, b) {
 
   // 結果：a 全体を b 全体に変換するコスト
   return d[m][n];
+}
+
+/**
+ * 編集前後の距離差から寄与を判定し、カウンタを更新する
+ * @param {string} prevText — 編集前のテキスト
+ * @param {string} nextText — 編集後のテキスト
+ * @param {string} target — 目標テキスト
+ */
+function classifyContribution(prevText, nextText, target) {
+  const distBefore = levenshteinDistance(prevText, target);
+  const distAfter = levenshteinDistance(nextText, target);
+
+  if (distAfter < distBefore) {
+    contribution.positive++;  // 距離が縮まった → 寄与
+  } else if (distAfter > distBefore) {
+    contribution.negative++;  // 距離が広がった → 非寄与
+  } else {
+    contribution.neutral++;   // 距離が変わらない → 中立
+  }
 }
 
 
@@ -206,6 +233,10 @@ function saveProgress() {
     completedSentences: Array.from(gameState.completedSentences),
     totalTyped: gameState.totalTyped,
     correctTyped: gameState.correctTyped,
+    committedChars: gameState.committedChars,
+    contributionPositive: contribution.positive,
+    contributionNegative: contribution.negative,
+    contributionNeutral: contribution.neutral,
     elapsedTime: gameState.elapsedTime,
     skippedSentences: gameState.skippedSentences,
     currentIndex: gameState.currentIndex,
@@ -262,6 +293,10 @@ async function loadFromURL() {
   gameState.completedSentences = new Set(progressData.completedSentences);
   gameState.totalTyped = progressData.totalTyped;
   gameState.correctTyped = progressData.correctTyped;
+  gameState.committedChars = progressData.committedChars ?? 0;
+  contribution.positive = progressData.contributionPositive ?? 0;
+  contribution.negative = progressData.contributionNegative ?? 0;
+  contribution.neutral = progressData.contributionNeutral ?? 0;
   gameState.elapsedTime = progressData.elapsedTime;
   gameState.skippedSentences = progressData.skippedSentences;
   gameState.currentIndex = progressData.currentIndex;
@@ -471,9 +506,15 @@ function startGame() {
   gameState.elapsedTime = 0;
   gameState.totalTyped = 0;
   gameState.correctTyped = 0;
+  gameState.committedChars = 0;
   gameState.currentIndex = 0;
   gameState.skippedSentences = 0;
   gameState.completedSentences = new Set();
+  
+  // 寄与カウンタをリセット
+  contribution.positive = 0;
+  contribution.negative = 0;
+  contribution.neutral = 0;
 
   showScreen("game-screen");
 
@@ -613,21 +654,22 @@ function endGame() {
     .padStart(2, "0")}`;
   elements.finalAccuracy.textContent = `${calculateAccuracy()}%`;
   elements.finalSpeed.textContent = calculateSpeed();
-  elements.finalTotalTyped.textContent = gameState.totalTyped;
-  elements.finalCorrectTyped.textContent = gameState.correctTyped;
+  elements.finalTotalTyped.textContent = gameState.committedChars;
+  elements.finalCorrectTyped.textContent = contribution.positive;
 }
 
-// 正確さを計算
+// 正確さを計算（寄与率：中立を除外した割合）
 function calculateAccuracy() {
-  if (gameState.totalTyped === 0) return 0;
-  return Math.floor((gameState.correctTyped / gameState.totalTyped) * 100);
+  const totalUsed = contribution.positive + contribution.negative;
+  if (totalUsed === 0) return 0;
+  return Math.floor((contribution.positive / totalUsed) * 100);
 }
 
-// 入力速度を計算（文字/分）
+// 入力速度を計算（文字数空間：確定挿入文字数/分）
 function calculateSpeed() {
   const minutesElapsed = gameState.elapsedTime / 60;
   if (minutesElapsed === 0) return 0;
-  return Math.floor(gameState.totalTyped / minutesElapsed);
+  return Math.floor(gameState.committedChars / minutesElapsed);
 }
 
 // 入力テキストの検証 (パフォーマンス最適化版)
@@ -735,16 +777,55 @@ elements.filterPatternInput.addEventListener("input", debouncedProcessText);
 elements.filterReplacementInput.addEventListener("input", debouncedProcessText);
 elements.useSegmenterCheckbox.addEventListener("change", processText);
 
-// 通常の入力処理
+// beforeinput: 確定編集イベント（insert/delete/paste等）で寄与判定
+elements.typingInput.addEventListener("beforeinput", (e) => {
+  if (!gameState.isRunning || gameState.isComposing) return;
+
+  const inputElement = elements.typingInput;
+  const prevText = inputElement.value;
+  const target = gameState.currentSentence;
+  
+  // カーソル位置と選択範囲を取得
+  const selStart = inputElement.selectionStart ?? 0;
+  const selEnd = inputElement.selectionEnd ?? 0;
+  
+  let nextText = prevText;
+  let insertedCharCount = 0;
+
+  // 入力タイプに応じて編集後テキストを予測
+  if (e.inputType === "insertText" || e.inputType === "insertFromPaste") {
+    const inserted = e.data ?? "";
+    nextText = prevText.slice(0, selStart) + inserted + prevText.slice(selEnd);
+    insertedCharCount = inserted.length;
+  } else if (e.inputType === "deleteContentBackward") {
+    // バックスペース
+    const delStart = selStart === selEnd ? Math.max(selStart - 1, 0) : selStart;
+    nextText = prevText.slice(0, delStart) + prevText.slice(selEnd);
+  } else if (e.inputType === "deleteContentForward") {
+    // Delete キー
+    const delEnd = selStart === selEnd ? Math.min(selEnd + 1, prevText.length) : selEnd;
+    nextText = prevText.slice(0, selStart) + prevText.slice(delEnd);
+  } else if (e.inputType === "insertCompositionText") {
+    // composition中の一時挿入は無視（compositionendで処理）
+    return;
+  } else {
+    // その他の編集タイプ（改行、カット等）
+    // デフォルトでは変化なしとして扱う（必要に応じて対応追加）
+    return;
+  }
+
+  // 寄与判定
+  classifyContribution(prevText, nextText, target);
+  
+  // 確定挿入文字数をカウント（挿入系のみ）
+  if (insertedCharCount > 0) {
+    gameState.committedChars += insertedCharCount;
+  }
+});
+
+// input: 表示更新と進捗保存のみ（カウントはbeforeinputで実施済み）
 elements.typingInput.addEventListener("input", () => {
   if (!gameState.isComposing) {
-    gameState.totalTyped++;
-    if (
-      elements.typingInput.value[elements.typingInput.value.length - 1] ===
-      gameState.currentSentence[elements.typingInput.value.length - 1]
-    ) {
-      gameState.correctTyped++;
-    }
     // 進捗を保存
     saveProgress();
     // 入力の検証をすぐに実行
@@ -781,16 +862,18 @@ elements.typingInput.addEventListener("compositionend", (e) => {
   gameState.isComposing = false;
   elements.compositionStatus.textContent = ""; // 即時クリア
 
-  // 確定された文字数分だけカウント
-  gameState.totalTyped += e.data.length;
+  if (!gameState.isRunning) return;
 
-  // 正しい文字数をカウント
-  const currentPosition = elements.typingInput.value.length - e.data.length;
-  for (let i = 0; i < e.data.length; i++) {
-    if (gameState.currentSentence[currentPosition + i] === e.data[i]) {
-      gameState.correctTyped++;
-    }
-  }
+  const inputElement = elements.typingInput;
+  const afterText = inputElement.value;
+  const insertedLength = e.data?.length ?? 0;
+  const beforeText = afterText.slice(0, afterText.length - insertedLength);
+  
+  // 寄与判定（IME確定全体を1編集として評価）
+  classifyContribution(beforeText, afterText, gameState.currentSentence);
+  
+  // 確定挿入文字数をカウント
+  gameState.committedChars += insertedLength;
 
   // 進捗を保存
   saveProgress();
