@@ -300,6 +300,13 @@ body {
   justify-content: space-between;
 }
 
+.progress-info {
+  text-wrap: nowrap;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--primary);
+}
+
 .progress-bg {
   height: 6px;
   background-color: var(--divider);
@@ -318,13 +325,9 @@ body {
 }
 
 .progress-percentage {
-  font-size: 1.2rem;
-  font-weight: 500;
-  color: var(--primary);
   min-width: 3rem;
   text-align: center;
   flex-shrink: 0;
-  padding: 0rem 0.7rem;
   display: inline-block;
 }
 
@@ -336,7 +339,7 @@ body {
 }
 
 .sentence-count {
-  margin-right: 0.5rem;
+  margin-right: 0.3rem;
 }
 
 .keyboard-tips {
