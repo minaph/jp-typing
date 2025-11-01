@@ -21,6 +21,15 @@ const gameState = {
 let lastSaveTime = 0;
 const SAVE_THROTTLE_MS = 1000; // 1秒に1回のみ保存
 
+// デバウンス関数（短時間の連続呼び出しを最後の1回にまとめる）
+function debounce(fn, ms) {
+  let timeoutId;
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+
 // DOM要素
 const elements = {
   setupScreen: document.getElementById("setup-screen"),
@@ -630,6 +639,8 @@ function checkInput() {
 // 最初の画面に戻る
 function returnToSetup() {
   showScreen("setup-screen");
+  // URLパラメータからハッシュを削除
+  window.history.replaceState({}, "", window.location.pathname);
 }
 
 // ゲーム中に設定画面に戻る
@@ -639,6 +650,8 @@ function returnToSetupDuringGame() {
     gameState.isRunning = false;
   }
   showScreen("setup-screen");
+  // URLパラメータからハッシュを削除
+  window.history.replaceState({}, "", window.location.pathname);
 }
 
 // ゲームリセット
@@ -667,6 +680,11 @@ elements.restartBtn.addEventListener("click", restartGame);
 elements.returnSetupBtn.addEventListener("click", returnToSetupDuringGame);
 elements.retryBtn.addEventListener("click", retryGame);
 elements.returnBtn.addEventListener("click", returnToSetup);
+
+// splitter設定変更時にプレビューを自動更新
+const debouncedProcessText = debounce(processText, 300);
+elements.splitPatternInput.addEventListener("input", debouncedProcessText);
+elements.useSegmenterCheckbox.addEventListener("change", processText);
 
 // 通常の入力処理
 elements.typingInput.addEventListener("input", () => {
