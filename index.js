@@ -23,6 +23,10 @@ const contribution = {
   neutral: 0,   // 距離が変わらなかった編集
 };
 
+// 打鍵数カウンタ（IME中/非IME中の打鍵数を積算）
+let imeKeystrokes = 0;        // IME入力中の打鍵数
+let keysSinceLastEdit = 0;    // 非IME時、直近編集までの打鍵数
+
 // 進捗保存用の変数
 let lastSaveTime = 0;
 const SAVE_THROTTLE_MS = 1000; // 1秒に1回のみ保存
@@ -98,6 +102,39 @@ function classifyContribution(prevText, nextText, target) {
     contribution.negative++;  // 距離が広がった → 非寄与
   } else {
     contribution.neutral++;   // 距離が変わらない → 中立
+  }
+}
+
+/**
+ * 編集前後の距離差から寄与の符号だけを返す（+1:寄与, 0:中立, -1:非寄与）
+ * @param {string} prevText — 編集前のテキスト
+ * @param {string} nextText — 編集後のテキスト
+ * @param {string} target — 目標テキスト
+ * @returns {number} — 寄与の符号
+ */
+function getContributionSign(prevText, nextText, target) {
+  const distBefore = levenshteinDistance(prevText, target);
+  const distAfter = levenshteinDistance(nextText, target);
+  return Math.sign(distBefore - distAfter);
+}
+
+/**
+ * 打鍵数を寄与に配賦する（IME確定時や非IME編集時に使用）
+ * @param {string} prevText — 編集前のテキスト
+ * @param {string} nextText — 編集後のテキスト
+ * @param {string} target — 目標テキスト
+ * @param {number} keystrokes — 配賦する打鍵数
+ */
+function allocateKeystrokes(prevText, nextText, target, keystrokes) {
+  const sign = getContributionSign(prevText, nextText, target);
+  const k = Math.max(1, keystrokes); // 最低1として配賦
+  
+  if (sign > 0) {
+    contribution.positive += k;
+  } else if (sign < 0) {
+    contribution.negative += k;
+  } else {
+    contribution.neutral += k;
   }
 }
 
@@ -296,6 +333,10 @@ async function loadFromURL() {
   gameState.skippedSentences = progressData.skippedSentences;
   gameState.currentIndex = progressData.currentIndex;
   gameState.textHash = hash;
+  
+  // 打鍵カウンタをリセット（一時的な状態なので復元時は0から）
+  imeKeystrokes = 0;
+  keysSinceLastEdit = 0;
 
   // ランダム化設定を適用
   if (gameState.randomizeOrder) {
@@ -509,6 +550,10 @@ function startGame() {
   contribution.positive = 0;
   contribution.negative = 0;
   contribution.neutral = 0;
+  
+  // 打鍵カウンタをリセット
+  imeKeystrokes = 0;
+  keysSinceLastEdit = 0;
 
   showScreen("game-screen");
 
@@ -693,7 +738,7 @@ function calculateProductivity() {
   
   if (totalKeystrokes === 0) return 0;
   
-  return Math.floor((earnedChars / totalKeystrokes) * 100);
+  return (earnedChars / totalKeystrokes).toFixed(2);
 }
 
 // 入力テキストの検証 (パフォーマンス最適化版)
@@ -839,8 +884,9 @@ elements.typingInput.addEventListener("beforeinput", (e) => {
     return;
   }
 
-  // 寄与判定
-  classifyContribution(prevText, nextText, target);
+  // 打鍵数ベースの寄与配賦（非IME時）
+  allocateKeystrokes(prevText, nextText, target, keysSinceLastEdit);
+  keysSinceLastEdit = 0; // リセット
   
   // 確定挿入文字数をカウント（挿入系のみ）
   if (insertedCharCount > 0) {
@@ -855,6 +901,23 @@ elements.typingInput.addEventListener("input", () => {
     saveProgress();
     // 入力の検証をすぐに実行
     checkInput();
+  }
+});
+
+// 打鍵数カウント（全てのキー操作を許容）
+elements.typingInput.addEventListener("keydown", (e) => {
+  if (!gameState.isRunning) return;
+  
+  // タブキーでのスキップ処理は除外（後続のハンドラで処理）
+  if (e.key === "Tab" && !gameState.isComposing) {
+    return;
+  }
+  
+  // IME中か非IME中かで振り分け
+  if (gameState.isComposing) {
+    imeKeystrokes++;
+  } else {
+    keysSinceLastEdit++;
   }
 });
 
@@ -876,6 +939,7 @@ elements.typingInput.addEventListener("keydown", (e) => {
 // IME関連のイベント処理
 elements.typingInput.addEventListener("compositionstart", () => {
   gameState.isComposing = true;
+  imeKeystrokes = 0; // IME開始時にリセット
   elements.compositionStatus.textContent = "IME入力中...";
 });
 
@@ -894,10 +958,11 @@ elements.typingInput.addEventListener("compositionend", (e) => {
   const insertedLength = e.data?.length ?? 0;
   const beforeText = afterText.slice(0, afterText.length - insertedLength);
   
-  // 寄与判定（IME確定全体を1編集として評価）
-  classifyContribution(beforeText, afterText, gameState.currentSentence);
+  // 打鍵数ベースの寄与配賦（IME確定時）
+  allocateKeystrokes(beforeText, afterText, gameState.currentSentence, imeKeystrokes);
+  imeKeystrokes = 0; // リセット
   
-  // 確定挿入文字数をカウント
+  // 確定挿入文字数をカウント（速度計算用）
   gameState.committedChars += insertedLength;
 
   // 進捗を保存
