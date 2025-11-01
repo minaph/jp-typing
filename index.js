@@ -87,25 +87,6 @@ function levenshteinDistance(a, b) {
 }
 
 /**
- * 編集前後の距離差から寄与を判定し、カウンタを更新する
- * @param {string} prevText — 編集前のテキスト
- * @param {string} nextText — 編集後のテキスト
- * @param {string} target — 目標テキスト
- */
-function classifyContribution(prevText, nextText, target) {
-  const distBefore = levenshteinDistance(prevText, target);
-  const distAfter = levenshteinDistance(nextText, target);
-
-  if (distAfter < distBefore) {
-    contribution.positive++;  // 距離が縮まった → 寄与
-  } else if (distAfter > distBefore) {
-    contribution.negative++;  // 距離が広がった → 非寄与
-  } else {
-    contribution.neutral++;   // 距離が変わらない → 中立
-  }
-}
-
-/**
  * 編集前後の距離差から寄与の符号だけを返す（+1:寄与, 0:中立, -1:非寄与）
  * @param {string} prevText — 編集前のテキスト
  * @param {string} nextText — 編集後のテキスト
