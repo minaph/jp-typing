@@ -341,8 +341,8 @@ async function processText() {
       0
     );
 
-    // 予想時間を計算（タイピング速度を300文字/分と仮定）
-    const estimatedMinutes = Math.ceil(totalCharacters / 300);
+    // 予想時間を計算（タイピング速度を100文字/分と仮定）
+    const estimatedMinutes = Math.ceil(totalCharacters / 100);
 
     // テキスト統計情報を表示
     elements.sentenceCount.textContent = gameState.sentences.length;
