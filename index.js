@@ -684,6 +684,8 @@ elements.returnBtn.addEventListener("click", returnToSetup);
 // splitter設定変更時にプレビューを自動更新
 const debouncedProcessText = debounce(processText, 300);
 elements.splitPatternInput.addEventListener("input", debouncedProcessText);
+elements.filterPatternInput.addEventListener("input", debouncedProcessText);
+elements.filterReplacementInput.addEventListener("input", debouncedProcessText);
 elements.useSegmenterCheckbox.addEventListener("change", processText);
 
 // 通常の入力処理
