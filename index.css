@@ -725,6 +725,10 @@ input:checked + .slider:before {
   border-left: 3px solid var(--info);
 }
 
+.toast.error {
+  border-left: 3px solid var(--error);
+}
+
 .toast-icon {
   margin-right: var(--spacing-3);
   font-size: 1rem;
