@@ -1,233 +1,439 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>日本語タイピング タイムアタック</title>
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Outfit:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
-</head>
-<body>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Outfit:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
     <div class="container">
-        <header class="app-header">
-            <h1 class="app-title">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="6" y1="12" x2="6" y2="18"/><line x1="18" y1="12" x2="18" y2="18"/></svg>
-                日本語タイピング
-            </h1>
-        </header>
-        
-        <div class="content">
-            <!-- セットアップ画面 -->
-            <div id="setup-screen" class="screen active">
-                <div class="text-input-container">
-                    <h2 class="section-title">教材テキストを入力</h2>
-                    <label class="input-label" for="text-material">テキスト入力またはファイルアップロード</label>
-                    <textarea id="text-material" placeholder="ここにタイピングする教材テキストを入力してください"></textarea>
-                    
-                    <div class="file-input-container">
-                        <input type="file" id="file-upload" accept=".txt">
-                        <label for="file-upload" class="file-input-label">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                            テキストファイルを選択
-                        </label>
-                    </div>
-                    
-                    <div class="button-container">
-                        <button id="process-text-btn" class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            テキストを解析
-                        </button>
-                    </div>
-                </div>
-                
-                <div id="text-stats" style="display: none;">
-                    <h2 class="section-title">テキスト解析結果</h2>
-                    
-                    <div class="stats-container">
-                        <div class="stat-card">
-                            <span id="sentence-count" class="stat-value">0</span>
-                            <span class="stat-label">文章数</span>
-                        </div>
-                        <div class="stat-card">
-                            <span id="character-count" class="stat-value">0</span>
-                            <span class="stat-label">総文字数</span>
-                        </div>
-                        <div class="stat-card">
-                            <span id="estimated-time" class="stat-value">0分</span>
-                            <span class="stat-label">予想所要時間</span>
-                        </div>
-                    </div>
-                    
-                    <div class="switch-container">
-                        <label class="switch">
-                            <input type="checkbox" id="random-order">
-                            <span class="slider"></span>
-                        </label>
-                        <span class="switch-label">文章の順序をランダム化</span>
-                    </div>
-                    
-                    <div class="split-settings">
-                        <h3 class="split-settings-title">分割設定</h3>
-                        
-                        <div id="filter-section" class="filter-section">
-                            <h4 class="subsection-title">フィルタ（前処理）</h4>
-                            <div class="filter-inputs">
-                                <div class="filter-input-group">
-                                    <label class="input-label" for="filter-pattern">置換パターン（正規表現）</label>
-                                    <input type="text" id="filter-pattern" class="custom-regex-input" placeholder="(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])\s+(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])" value="(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])\s+(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])">
-                                </div>
-                                <div class="filter-input-group">
-                                    <label class="input-label" for="filter-replacement">置換後のテキスト</label>
-                                    <input type="text" id="filter-replacement" class="custom-regex-input" placeholder="（空文字）" value="">
-                                </div>
-                            </div>
-                            <p class="input-hint">テキストをフィルタパターンで置換してから分割処理を行います</p>
-                        </div>
-                        
-                        <div id="split-section" class="split-section">
-                            <h4 class="subsection-title">分割</h4>
-                            <label class="input-label" for="split-pattern">分割パターン（正規表現）</label>
-                            <input type="text" id="split-pattern" class="custom-regex-input" placeholder="[。！？\n]+" value="[。！？\n]+">
-                            <p class="input-hint">フィルタ後のテキストをこの正規表現で分割します</p>
-                        </div>
-                        
-                        <div class="switch-container">
-                            <label class="switch">
-                                <input type="checkbox" id="use-segmenter" checked>
-                                <span class="slider"></span>
-                            </label>
-                            <span class="switch-label">TextSegmenterでさらに細かく分割</span>
-                        </div>
-                        
-                        <div id="preview-container" class="preview-container" style="display: none;">
-                            <h4 class="preview-title">分割プレビュー</h4>
-                            <div id="sentence-preview-list" class="sentence-preview-list"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="button-container">
-                        <button id="start-game-btn" class="btn btn-accent">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                            タイムアタック開始
-                        </button>
-                    </div>
-                </div>
+      <header class="app-header">
+        <h1 class="app-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="2" y="6" width="20" height="12" rx="2" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <line x1="6" y1="12" x2="6" y2="18" />
+            <line x1="18" y1="12" x2="18" y2="18" />
+          </svg>
+          日本語タイピング
+        </h1>
+      </header>
+
+      <div class="content">
+        <!-- セットアップ画面 -->
+        <div id="setup-screen" class="screen active">
+          <div class="text-input-container">
+            <h2 class="section-title">教材テキストを入力</h2>
+            <label class="input-label" for="text-material"
+              >テキスト入力またはファイルアップロード</label
+            >
+            <textarea
+              id="text-material"
+              placeholder="ここにタイピングする教材テキストを入力してください"
+            ></textarea>
+
+            <div class="file-input-container">
+              <input type="file" id="file-upload" accept=".txt" />
+              <label for="file-upload" class="file-input-label">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+                テキストファイルを選択
+              </label>
             </div>
-            
-            <!-- ゲーム画面 -->
-            <div id="game-screen" class="screen">
-                <div class="game-header">
-                    <div class="timer">
-                        <svg class="timer-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        <span id="timer-display">0:00</span>
-                    </div>
-                    <div>
-                        <button id="return-setup-btn" class="btn btn-secondary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                            設定に戻る
-                        </button>
-                        <button id="restart-btn" class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-                            やり直し
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="progress-container">
-                    <div id="progress-bar"></div>
-                </div>
-                
-                <div class="sentence-info">
-                    <div class="sentence-count">
-                        <span id="current-sentence-index">0</span> / <span id="total-sentences">0</span> 文目
-                    </div>
-                    <div class="keyboard-tips">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>
-                        TABでスキップ・Shift+TABで前へ
-                    </div>
-                </div>
-                
-                <div class="context-text-before" id="context-text-before"></div>
-                
-                <div class="target-text-container">
-                    <div id="target-text" class="target-text">
-                        ここに入力するテキストが表示されます
-                    </div>
-                </div>
-                
-                <div class="context-text-after" id="context-text-after"></div>
-                
-                <div class="input-area">
-                    <input type="text" id="typing-input" placeholder="ここに入力してください" autocomplete="off" disabled>
-                    <div id="composition-status" class="composition-area"></div>
-                </div>
-                
-                <div class="typing-stats">
-                    <div class="typing-stat">
-                        <div id="accuracy-display" class="typing-stat-value">0%</div>
-                        <div class="typing-stat-label">正確さ</div>
-                    </div>
-                    <div class="typing-stat">
-                        <div id="speed-display" class="typing-stat-value">0</div>
-                        <div class="typing-stat-label">速度<span class="typing-stat-unit">文字/分</span></div>
-                    </div>
-                    <div class="typing-stat">
-                        <div id="progress-display" class="typing-stat-value">0%</div>
-                        <div class="typing-stat-label">進捗</div>
-                    </div>
-                </div>
+
+            <div class="button-container">
+              <button id="process-text-btn" class="btn btn-primary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                テキストを解析
+              </button>
             </div>
-            
-            <!-- 結果画面 -->
-            <div id="result-screen" class="screen">
-                <div class="result-header">
-                    <h2 class="result-title">タイムアタック完了！</h2>
-                    <p class="result-subtitle">お疲れ様でした！以下があなたの結果です</p>
-                </div>
-                
-                <div class="result-stats">
-                    <div class="result-stat">
-                        <div id="final-time" class="result-stat-value">0:00</div>
-                        <div class="result-stat-label">タイム</div>
-                    </div>
-                    <div class="result-stat">
-                        <div id="final-accuracy" class="result-stat-value">0%</div>
-                        <div class="result-stat-label">正確さ</div>
-                    </div>
-                    <div class="result-stat">
-                        <div id="final-speed" class="result-stat-value">0</div>
-                        <div class="result-stat-label">平均速度<span class="result-stat-unit">文字/分</span></div>
-                    </div>
-                    <div class="result-stat">
-                        <div id="final-total-typed" class="result-stat-value">0</div>
-                        <div class="result-stat-label">確定文字数</div>
-                    </div>
-                    <div class="result-stat">
-                        <div id="final-correct-typed" class="result-stat-value">0</div>
-                        <div class="result-stat-label">正確なタイプ数</div>
-                    </div>
-                </div>
-                
-                <div class="result-actions">
-                    <button id="retry-btn" class="btn btn-accent">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-                        同じテキストで再挑戦
-                    </button>
-                    <button id="return-btn" class="btn btn-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                        新しいテキストで挑戦
-                    </button>
-                </div>
+          </div>
+
+          <div id="text-stats" style="display: none">
+            <h2 class="section-title">テキスト解析結果</h2>
+
+            <div class="stats-container">
+              <div class="stat-card">
+                <span id="sentence-count" class="stat-value">0</span>
+                <span class="stat-label">文章数</span>
+              </div>
+              <div class="stat-card">
+                <span id="character-count" class="stat-value">0</span>
+                <span class="stat-label">総文字数</span>
+              </div>
+              <div class="stat-card">
+                <span id="estimated-time" class="stat-value">0分</span>
+                <span class="stat-label">予想所要時間</span>
+              </div>
             </div>
+
+            <div class="switch-container">
+              <label class="switch">
+                <input type="checkbox" id="random-order" />
+                <span class="slider"></span>
+              </label>
+              <span class="switch-label">文章の順序をランダム化</span>
+            </div>
+
+            <div class="split-settings">
+              <h3 class="split-settings-title">分割設定</h3>
+
+              <div id="filter-section" class="filter-section">
+                <h4 class="subsection-title">フィルタ（前処理）</h4>
+                <div class="filter-inputs">
+                  <div class="filter-input-group">
+                    <label class="input-label" for="filter-pattern"
+                      >置換パターン（正規表現）</label
+                    >
+                    <input
+                      type="text"
+                      id="filter-pattern"
+                      class="custom-regex-input"
+                      placeholder="(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])\s+(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])"
+                      value="(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])\s+(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])"
+                    />
+                  </div>
+                  <div class="filter-input-group">
+                    <label class="input-label" for="filter-replacement"
+                      >置換後のテキスト</label
+                    >
+                    <input
+                      type="text"
+                      id="filter-replacement"
+                      class="custom-regex-input"
+                      placeholder="（空文字）"
+                      value=""
+                    />
+                  </div>
+                </div>
+                <p class="input-hint">
+                  テキストをフィルタパターンで置換してから分割処理を行います
+                </p>
+              </div>
+
+              <div id="split-section" class="split-section">
+                <h4 class="subsection-title">分割</h4>
+                <label class="input-label" for="split-pattern"
+                  >分割パターン（正規表現）</label
+                >
+                <input
+                  type="text"
+                  id="split-pattern"
+                  class="custom-regex-input"
+                  placeholder="[。！？\n]+"
+                  value="[。！？\n]+"
+                />
+                <p class="input-hint">
+                  フィルタ後のテキストをこの正規表現で分割します
+                </p>
+              </div>
+
+              <div class="switch-container">
+                <label class="switch">
+                  <input type="checkbox" id="use-segmenter" checked />
+                  <span class="slider"></span>
+                </label>
+                <span class="switch-label"
+                  >TextSegmenterでさらに細かく分割</span
+                >
+              </div>
+
+              <div
+                id="preview-container"
+                class="preview-container"
+                style="display: none"
+              >
+                <h4 class="preview-title">分割プレビュー</h4>
+                <div
+                  id="sentence-preview-list"
+                  class="sentence-preview-list"
+                ></div>
+              </div>
+            </div>
+
+            <div class="button-container">
+              <button id="start-game-btn" class="btn btn-accent">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                タイムアタック開始
+              </button>
+            </div>
+          </div>
         </div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="screen">
+          <div class="game-header">
+            <div class="timer">
+              <svg
+                class="timer-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span id="timer-display">0:00</span>
+            </div>
+            <div>
+              <button id="return-setup-btn" class="btn btn-secondary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                設定に戻る
+              </button>
+              <button id="restart-btn" class="btn btn-primary">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
+                  />
+                </svg>
+                やり直し
+              </button>
+            </div>
+          </div>
+
+          <div class="progress-container">
+            <div id="progress-bar"></div>
+            <div class="progress-percentage" id="progress-percentage">0%</div>
+          </div>
+
+          <div class="sentence-info">
+            <div class="sentence-count">
+              <span id="current-sentence-index">0</span> /
+              <span id="total-sentences">0</span> 文目
+            </div>
+            <div class="keyboard-tips">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                <path d="M6 8h.001" />
+                <path d="M10 8h.001" />
+                <path d="M14 8h.001" />
+                <path d="M18 8h.001" />
+                <path d="M8 12h.001" />
+                <path d="M12 12h.001" />
+                <path d="M16 12h.001" />
+                <path d="M7 16h10" />
+              </svg>
+              TABでスキップ・Shift+TABで前へ
+            </div>
+          </div>
+
+          <div class="target-text-container">
+            <div class="context-text-before" id="context-text-before"></div>
+            <div id="target-text" class="target-text">
+              ここに入力するテキストが表示されます
+            </div>
+            <div class="context-text-after" id="context-text-after"></div>
+          </div>
+
+          <div class="input-area">
+            <input
+              type="text"
+              id="typing-input"
+              placeholder="ここに入力してください"
+              autocomplete="off"
+              disabled
+            />
+            <div id="composition-status" class="composition-area"></div>
+          </div>
+
+          <div class="typing-stats">
+            <div class="typing-stat">
+              <div class="typing-stat-value">
+                <span id="accuracy-display">0</span>
+                <span class="typing-stat-unit">%</span>
+              </div>
+              <div class="typing-stat-label">正確さ</div>
+            </div>
+            <div class="typing-stat">
+              <div class="typing-stat-value">
+                <span id="speed-display">0</span>
+                <span class="typing-stat-unit">文字/分</span>
+              </div>
+              <div class="typing-stat-label">速度</div>
+            </div>
+            <div class="typing-stat">
+              <div class="typing-stat-value">
+                <span id="productivity-display">0</span>
+                <span class="typing-stat-unit">%</span>
+              </div>
+              <div class="typing-stat-label">生産性</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="result-screen" class="screen">
+          <div class="result-header">
+            <h2 class="result-title">タイムアタック完了！</h2>
+            <p class="result-subtitle">
+              お疲れ様でした！以下があなたの結果です
+            </p>
+          </div>
+
+          <div class="result-stats">
+            <div class="result-stat">
+              <div id="final-time" class="result-stat-value">0:00</div>
+              <div class="result-stat-label">タイム</div>
+            </div>
+            <div class="result-stat">
+              <div id="final-accuracy" class="result-stat-value">0%</div>
+              <div class="result-stat-label">正確さ</div>
+            </div>
+            <div class="result-stat">
+              <div id="final-speed" class="result-stat-value">0</div>
+              <div class="result-stat-label">
+                平均速度<span class="result-stat-unit">文字/分</span>
+              </div>
+            </div>
+            <div class="result-stat">
+              <div id="final-total-typed" class="result-stat-value">0</div>
+              <div class="result-stat-label">確定文字数</div>
+            </div>
+            <div class="result-stat">
+              <div id="final-correct-typed" class="result-stat-value">0</div>
+              <div class="result-stat-label">正確なタイプ数</div>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button id="retry-btn" class="btn btn-accent">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
+                />
+              </svg>
+              同じテキストで再挑戦
+            </button>
+            <button id="return-btn" class="btn btn-secondary">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              新しいテキストで挑戦
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- トースト通知コンテナ -->
     <div id="toast-container" class="toast-container"></div>
-    
+
     <script src="index.js"></script>
-</body>
+  </body>
 </html>

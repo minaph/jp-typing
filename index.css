@@ -294,11 +294,19 @@ body {
 }
 
 .progress-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-6);
+}
+
+.progress-container > div:first-child {
+  flex: 1;
   height: 6px;
   background-color: var(--divider);
   border-radius: 999px;
   overflow: hidden;
-  margin-bottom: var(--spacing-6);
 }
 
 #progress-bar {
@@ -307,6 +315,15 @@ body {
   border-radius: 999px;
   width: 0%;
   transition: width 0.5s ease;
+}
+
+.progress-percentage {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-light);
+  min-width: 3rem;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .sentence-info {
@@ -420,8 +437,8 @@ body {
 }
 
 .typing-stat-unit {
-  font-size: 0.625rem;
-  color: var(--text-lighter);
+  font-size: 0.8rem;
+  margin-left: 0.25rem;
 }
 
 /* 結果画面 */
@@ -674,13 +691,15 @@ input:checked + .slider:before {
 /* 前後の文章表示 */
 .context-text-before,
 .context-text-after {
-  padding: var(--spacing-3) var(--spacing-6);
-  font-size: 1.25rem;
+  padding: var(--spacing-3) 0;
+  font-size: 1.0rem;
   line-height: 1.6;
   color: var(--text-lighter);
   text-align: left;
   min-height: 2rem;
   font-family: 'Noto Sans JP', sans-serif;
+  width: 100%;
+  height: 4rem;
 }
 
 .context-text-before {

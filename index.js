@@ -4,8 +4,6 @@ const gameState = {
   startTime: 0,
   elapsedTime: 0,
   timer: null,
-  totalTyped: 0, // 互換性のため残す（後で削除可能）
-  correctTyped: 0, // 互換性のため残す（後で削除可能）
   committedChars: 0, // 文字数空間: 確定挿入文字数（速度計算用）
   currentIndex: 0,
   sentences: [],
@@ -122,8 +120,9 @@ const elements = {
   typingInput: document.getElementById("typing-input"),
   accuracyDisplay: document.getElementById("accuracy-display"),
   speedDisplay: document.getElementById("speed-display"),
-  progressDisplay: document.getElementById("progress-display"),
+  productivityDisplay: document.getElementById("productivity-display"),
   progressBar: document.getElementById("progress-bar"),
+  progressPercentage: document.getElementById("progress-percentage"),
   currentSentenceIndex: document.getElementById("current-sentence-index"),
   totalSentences: document.getElementById("total-sentences"),
   compositionStatus: document.getElementById("composition-status"),
@@ -231,8 +230,6 @@ function saveProgress() {
     originalSentences: gameState.originalSentences,
     randomizeOrder: gameState.randomizeOrder,
     completedSentences: Array.from(gameState.completedSentences),
-    totalTyped: gameState.totalTyped,
-    correctTyped: gameState.correctTyped,
     committedChars: gameState.committedChars,
     contributionPositive: contribution.positive,
     contributionNegative: contribution.negative,
@@ -291,8 +288,6 @@ async function loadFromURL() {
   gameState.originalSentences = progressData.originalSentences;
   gameState.randomizeOrder = progressData.randomizeOrder;
   gameState.completedSentences = new Set(progressData.completedSentences);
-  gameState.totalTyped = progressData.totalTyped;
-  gameState.correctTyped = progressData.correctTyped;
   gameState.committedChars = progressData.committedChars ?? 0;
   contribution.positive = progressData.contributionPositive ?? 0;
   contribution.negative = progressData.contributionNegative ?? 0;
@@ -331,8 +326,9 @@ async function loadFromURL() {
   loadCurrentSentence();
   updateProgress();
   updateTimerDisplay();
-  elements.accuracyDisplay.textContent = `${calculateAccuracy()}%`;
+  elements.accuracyDisplay.textContent = calculateAccuracy();
   elements.speedDisplay.textContent = calculateSpeed();
+  elements.productivityDisplay.textContent = calculateProductivity();
 
   // タイマー開始
   gameState.timer = setInterval(() => {
@@ -504,8 +500,6 @@ function startGame() {
   gameState.isRunning = true;
   gameState.startTime = Date.now();
   gameState.elapsedTime = 0;
-  gameState.totalTyped = 0;
-  gameState.correctTyped = 0;
   gameState.committedChars = 0;
   gameState.currentIndex = 0;
   gameState.skippedSentences = 0;
@@ -518,9 +512,9 @@ function startGame() {
 
   showScreen("game-screen");
 
-  elements.accuracyDisplay.textContent = "0%";
+  elements.accuracyDisplay.textContent = "0";
   elements.speedDisplay.textContent = "0";
-  elements.progressDisplay.textContent = "0%";
+  elements.productivityDisplay.textContent = "0";
   elements.typingInput.disabled = false;
   elements.typingInput.value = "";
   elements.typingInput.focus();
@@ -627,7 +621,7 @@ function updateProgress() {
     (gameState.currentIndex / gameState.sentences.length) * 100
   );
   elements.progressBar.style.width = `${progress}%`;
-  elements.progressDisplay.textContent = `${progress}%`;
+  elements.progressPercentage.textContent = `${progress}%`;
 }
 
 // ゲーム終了
@@ -670,6 +664,36 @@ function calculateSpeed() {
   const minutesElapsed = gameState.elapsedTime / 60;
   if (minutesElapsed === 0) return 0;
   return Math.floor(gameState.committedChars / minutesElapsed);
+}
+
+// 生産性を計算（獲得文字数 / 打鍵数 * 100）
+function calculateProductivity() {
+  // 完了した文章の文字数の総和
+  let completedChars = 0;
+  for (const index of gameState.completedSentences) {
+    if (gameState.sentences[index]) {
+      completedChars += gameState.sentences[index].length;
+    }
+  }
+  
+  // 現在入力中の文章の進捗
+  let currentProgress = 0;
+  if (gameState.isRunning && gameState.currentSentence) {
+    const currentInput = elements.typingInput.value;
+    const targetLength = gameState.currentSentence.length;
+    const distance = levenshteinDistance(currentInput, gameState.currentSentence);
+    currentProgress = Math.max(0, targetLength - distance);
+  }
+  
+  // 獲得文字数
+  const earnedChars = completedChars + currentProgress;
+  
+  // 全打鍵数
+  const totalKeystrokes = contribution.positive + contribution.negative + contribution.neutral;
+  
+  if (totalKeystrokes === 0) return 0;
+  
+  return Math.floor((earnedChars / totalKeystrokes) * 100);
 }
 
 // 入力テキストの検証 (パフォーマンス最適化版)
@@ -721,8 +745,9 @@ function checkInput() {
   targetElement.innerHTML = html;
 
   // 入力統計を更新
-  elements.accuracyDisplay.textContent = `${calculateAccuracy()}%`;
+  elements.accuracyDisplay.textContent = calculateAccuracy();
   elements.speedDisplay.textContent = calculateSpeed();
+  elements.productivityDisplay.textContent = calculateProductivity();
 }
 
 // 最初の画面に戻る
@@ -880,6 +905,9 @@ elements.typingInput.addEventListener("compositionend", (e) => {
 
   // 入力検証を即時実行（遅延なし）
   checkInput();
+  
+  // 生産性を更新
+  elements.productivityDisplay.textContent = calculateProductivity();
 });
 
 // ページ読み込み時にURLパラメータから進捗を復元
