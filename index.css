@@ -318,12 +318,17 @@ body {
 }
 
 .progress-percentage {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 500;
-  color: var(--text-light);
+  color: var(--primary);
   min-width: 3rem;
-  text-align: right;
+  text-align: center;
   flex-shrink: 0;
+  border: solid 2px;
+  border-radius: 9999px;
+  padding: 0rem 1rem;
+  margin-right: 0.5rem;
+  display: inline-block;
 }
 
 .sentence-info {
