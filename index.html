@@ -277,39 +277,16 @@
           </div>
 
           <div class="progress-container">
-            <div id="progress-bar"></div>
-            <div class="progress-percentage" id="progress-percentage">0%</div>
-          </div>
-
-          <div class="sentence-info">
-            <div class="sentence-count">
-              <span id="current-sentence-index">0</span> /
-              <span id="total-sentences">0</span> 文目
+            <div class="progress-bg">
+              <div id="progress-bar"></div>
             </div>
-            <div class="keyboard-tips">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
-                <path d="M6 8h.001" />
-                <path d="M10 8h.001" />
-                <path d="M14 8h.001" />
-                <path d="M18 8h.001" />
-                <path d="M8 12h.001" />
-                <path d="M12 12h.001" />
-                <path d="M16 12h.001" />
-                <path d="M7 16h10" />
-              </svg>
-              TABでスキップ・Shift+TABで前へ
-            </div>
+            <span class="progress-info">
+              <span class="sentence-count">
+                <span id="current-sentence-index">0</span> /
+                <span id="total-sentences">0</span>,
+              </span>
+              <span class="progress-percentage" id="progress-percentage">0%</span>
+            </span>
           </div>
 
           <div class="target-text-container">
@@ -324,7 +301,7 @@
             <input
               type="text"
               id="typing-input"
-              placeholder="ここに入力してください"
+              placeholder="ここに入力（TABでスキップ・Shift+TABで前へ）"
               autocomplete="off"
               disabled
             />

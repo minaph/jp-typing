@@ -297,16 +297,17 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-6);
   justify-content: space-between;
 }
 
-.progress-container > div:first-child {
-  flex: 1;
+.progress-bg {
   height: 6px;
   background-color: var(--divider);
   border-radius: 999px;
   overflow: hidden;
+
+  width: 100%;
+  margin-right: 1rem;
 }
 
 #progress-bar {
@@ -314,7 +315,6 @@ body {
   border-radius: 999px;
   width: 0%;
   transition: width 0.5s ease;
-  flex: 0 0 auto;
 }
 
 .progress-percentage {
@@ -324,10 +324,7 @@ body {
   min-width: 3rem;
   text-align: center;
   flex-shrink: 0;
-  border: solid 2px;
-  border-radius: 9999px;
-  padding: 0rem 1rem;
-  margin-right: 0.5rem;
+  padding: 0rem 0.7rem;
   display: inline-block;
 }
 
@@ -339,8 +336,7 @@ body {
 }
 
 .sentence-count {
-  font-size: 0.875rem;
-  color: var(--text-light);
+  margin-right: 0.5rem;
 }
 
 .keyboard-tips {
@@ -357,8 +353,6 @@ body {
 
 .target-text-container {
   background-color: var(--surface);
-  border: 1px solid var(--divider);
-  border-radius: var(--radius-lg);
   padding: var(--spacing-6);
   margin-bottom: var(--spacing-6);
   min-height: 120px;
