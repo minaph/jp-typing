@@ -30,6 +30,53 @@ function debounce(fn, ms) {
   };
 }
 
+/**
+ * Levenshtein 距離 (編集距離) を求める関数
+ * @param {string} a — 文字列 A（長さ m）
+ * @param {string} b — 文字列 B（長さ n）
+ * @returns {number} — A → B に変換するための最小編集操作数
+ */
+function levenshteinDistance(a, b) {
+  const m = a.length;
+  const n = b.length;
+
+  // 特殊ケース: どちらかが空文字列なら、もう一方の長さ分挿入／削除操作
+  if (m === 0) return n;
+  if (n === 0) return m;
+
+  // DP 行列 d を (m+1) × (n+1) サイズで確保
+  // d[i][j] = a の先頭 i 文字 → b の先頭 j 文字を変換する最小操作数
+  const d = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+
+  // 初期化：a を空文字列にするための削除コスト
+  for (let i = 0; i <= m; i++) {
+    d[i][0] = i;
+  }
+  // 初期化：空文字列を b にするための挿入コスト
+  for (let j = 0; j <= n; j++) {
+    d[0][j] = j;
+  }
+
+  // メインループ
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = (a[i - 1] === b[j - 1] ? 0 : 1);
+      // 削除：d[i-1][j] + 1
+      // 挿入：d[i][j-1] + 1
+      // 置換：d[i-1][j-1] + cost
+      d[i][j] = Math.min(
+        d[i - 1][j] + 1,
+        d[i][j - 1] + 1,
+        d[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  // 結果：a 全体を b 全体に変換するコスト
+  return d[m][n];
+}
+
+
 // DOM要素
 const elements = {
   setupScreen: document.getElementById("setup-screen"),
