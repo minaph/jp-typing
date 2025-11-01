@@ -69,6 +69,45 @@
                         <span class="switch-label">文章の順序をランダム化</span>
                     </div>
                     
+                    <div class="split-settings">
+                        <h3 class="split-settings-title">分割設定</h3>
+                        
+                        <div id="filter-section" class="filter-section">
+                            <h4 class="subsection-title">フィルタ（前処理）</h4>
+                            <div class="filter-inputs">
+                                <div class="filter-input-group">
+                                    <label class="input-label" for="filter-pattern">置換パターン（正規表現）</label>
+                                    <input type="text" id="filter-pattern" class="custom-regex-input" placeholder="(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])\s+(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])" value="(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])\s+(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])">
+                                </div>
+                                <div class="filter-input-group">
+                                    <label class="input-label" for="filter-replacement">置換後のテキスト</label>
+                                    <input type="text" id="filter-replacement" class="custom-regex-input" placeholder="（空文字）" value="">
+                                </div>
+                            </div>
+                            <p class="input-hint">テキストをフィルタパターンで置換してから分割処理を行います</p>
+                        </div>
+                        
+                        <div id="split-section" class="split-section">
+                            <h4 class="subsection-title">分割</h4>
+                            <label class="input-label" for="split-pattern">分割パターン（正規表現）</label>
+                            <input type="text" id="split-pattern" class="custom-regex-input" placeholder="[。！？\n]+" value="[。！？\n]+">
+                            <p class="input-hint">フィルタ後のテキストをこの正規表現で分割します</p>
+                        </div>
+                        
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="use-segmenter" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span class="switch-label">TextSegmenterでさらに細かく分割</span>
+                        </div>
+                        
+                        <div id="preview-container" class="preview-container" style="display: none;">
+                            <h4 class="preview-title">分割プレビュー</h4>
+                            <div id="sentence-preview-list" class="sentence-preview-list"></div>
+                        </div>
+                    </div>
+                    
                     <div class="button-container">
                         <button id="start-game-btn" class="btn btn-accent">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -107,15 +146,19 @@
                     </div>
                     <div class="keyboard-tips">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>
-                        TABキーでスキップ
+                        TABでスキップ・Shift+TABで前へ
                     </div>
                 </div>
+                
+                <div class="context-text-before" id="context-text-before"></div>
                 
                 <div class="target-text-container">
                     <div id="target-text" class="target-text">
                         ここに入力するテキストが表示されます
                     </div>
                 </div>
+                
+                <div class="context-text-after" id="context-text-after"></div>
                 
                 <div class="input-area">
                     <input type="text" id="typing-input" placeholder="ここに入力してください" autocomplete="off" disabled>

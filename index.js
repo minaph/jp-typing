@@ -55,6 +55,14 @@ const elements = {
   returnBtn: document.getElementById("return-btn"),
   randomOrderCheckbox: document.getElementById("random-order"),
   toastContainer: document.getElementById("toast-container"),
+  useSegmenterCheckbox: document.getElementById("use-segmenter"),
+  filterPatternInput: document.getElementById("filter-pattern"),
+  filterReplacementInput: document.getElementById("filter-replacement"),
+  splitPatternInput: document.getElementById("split-pattern"),
+  previewContainer: document.getElementById("preview-container"),
+  sentencePreviewList: document.getElementById("sentence-preview-list"),
+  contextTextBefore: document.getElementById("context-text-before"),
+  contextTextAfter: document.getElementById("context-text-after"),
 };
 
 // スクリーンの切り替え
@@ -255,27 +263,62 @@ async function processText() {
     return;
   }
 
-  // 日本語文字間の空白を削除する正規表現
-  // ひらがな、カタカナ、漢字の間の空白を削除
-  const textWithoutSpaces = text.replace(
-    /(?<=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])\s+(?=[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF])/g,
-    ""
-  );
-
-  // Intl.Segmenterで文単位に分割
   try {
-    const segmenter = new Intl.Segmenter("ja", { granularity: "sentence" });
-    const segments = segmenter.segment(textWithoutSpaces);
+    let processedText = text;
+    const useSegmenter = elements.useSegmenterCheckbox.checked;
+    const filterPattern = elements.filterPatternInput.value.trim();
+    const filterReplacement = elements.filterReplacementInput.value;
+    const splitPattern = elements.splitPatternInput.value.trim();
 
-    // 分割された文を配列に格納
-    gameState.originalSentences = Array.from(segments)
-      .map((segment) => segment.segment.trim())
-      .filter((sentence) => sentence.length > 0);
+    // 1. フィルタ処理（置換）
+    if (filterPattern) {
+      try {
+        const filterRegex = new RegExp(filterPattern, "g");
+        processedText = processedText.replace(filterRegex, filterReplacement);
+      } catch (regexError) {
+        console.error("フィルタパターンエラー:", regexError);
+        showToast("error", "フィルタパターンが無効です");
+        return;
+      }
+    }
+
+    // 2. 分割パターンで分割
+    let sentences = [];
+    if (splitPattern) {
+      try {
+        const splitRegex = new RegExp(splitPattern, "g");
+        const parts = processedText.split(splitRegex);
+        sentences = parts.filter(part => part.trim().length > 0);
+      } catch (regexError) {
+        console.error("分割パターンエラー:", regexError);
+        showToast("error", "分割パターンが無効です");
+        return;
+      }
+    } else {
+      // 分割パターンがない場合は全体を1つとして扱う
+      sentences = [processedText];
+    }
+
+    // 3. TextSegmenterでさらに分割
+    if (useSegmenter) {
+      const segmenter = new Intl.Segmenter("ja", { granularity: "sentence" });
+      const furtherSplit = [];
+      
+      for (const sentence of sentences) {
+        const segments = segmenter.segment(sentence);
+        const segmented = Array.from(segments)
+          .map((segment) => segment.segment.trim())
+          .filter((s) => s.length > 0);
+        furtherSplit.push(...segmented);
+      }
+      
+      sentences = furtherSplit;
+    }
 
     // 短すぎる文は除外（1文字以下）
-    gameState.originalSentences = gameState.originalSentences.filter(
-      (sentence) => sentence.length > 1
-    );
+    gameState.originalSentences = sentences
+      .map(s => s.trim())
+      .filter((sentence) => sentence.length > 1);
 
     // 文章の順序を設定（初期状態は元の順序）
     gameState.sentences = [...gameState.originalSentences];
@@ -299,6 +342,9 @@ async function processText() {
     elements.textStats.style.display = "block";
     elements.totalSentences.textContent = gameState.sentences.length;
 
+    // プレビューを表示
+    displaySentencePreview();
+
     if (gameState.sentences.length === 0) {
       alert("有効な文章が見つかりませんでした。別のテキストを試してください。");
     }
@@ -308,6 +354,30 @@ async function processText() {
       "テキストの処理中にエラーが発生しました。ブラウザがIntl.Segmenterをサポートしているか確認してください。"
     );
   }
+}
+
+// 文章プレビューを表示
+function displaySentencePreview() {
+  elements.sentencePreviewList.innerHTML = "";
+  
+  gameState.sentences.forEach((sentence, index) => {
+    const item = document.createElement("div");
+    item.className = "sentence-preview-item";
+    
+    const number = document.createElement("span");
+    number.className = "sentence-preview-number";
+    number.textContent = `${index + 1}.`;
+    
+    const text = document.createElement("span");
+    text.className = "sentence-preview-text";
+    text.textContent = sentence;
+    
+    item.appendChild(number);
+    item.appendChild(text);
+    elements.sentencePreviewList.appendChild(item);
+  });
+  
+  elements.previewContainer.style.display = "block";
 }
 
 // ファイルアップロード処理
@@ -390,6 +460,26 @@ function loadCurrentSentence() {
   elements.targetText.textContent = gameState.currentSentence;
   elements.typingInput.value = "";
   elements.currentSentenceIndex.textContent = gameState.currentIndex + 1;
+  
+  // 前後の文章を表示
+  updateContextDisplay();
+}
+
+// 前後の文章を表示
+function updateContextDisplay() {
+  // 前の文章
+  if (gameState.currentIndex > 0) {
+    elements.contextTextBefore.textContent = gameState.sentences[gameState.currentIndex - 1];
+  } else {
+    elements.contextTextBefore.textContent = "";
+  }
+  
+  // 次の文章
+  if (gameState.currentIndex < gameState.sentences.length - 1) {
+    elements.contextTextAfter.textContent = gameState.sentences[gameState.currentIndex + 1];
+  } else {
+    elements.contextTextAfter.textContent = "";
+  }
 }
 
 // 次の文章へスキップ
@@ -405,6 +495,31 @@ function skipCurrentSentence() {
 
   // トースト通知を表示
   showToast("info", "スキップしました");
+
+  loadCurrentSentence();
+}
+
+// 前の文章に戻る
+function goToPreviousSentence() {
+  if (!gameState.isRunning) return;
+  if (gameState.currentIndex <= 0) return; // 最初の文章の場合は何もしない
+
+  // 現在の文章を未完了に戻す
+  gameState.completedSentences.delete(gameState.currentIndex);
+  
+  // 前の文章に戻る
+  gameState.currentIndex--;
+  
+  // 前の文章も未完了に戻す
+  gameState.completedSentences.delete(gameState.currentIndex);
+  
+  updateProgress();
+
+  // 進捗を保存
+  saveProgress();
+
+  // トースト通知を表示
+  showToast("info", "前の文章に戻りました");
 
   loadCurrentSentence();
 }
@@ -570,11 +685,18 @@ elements.typingInput.addEventListener("input", () => {
   }
 });
 
-// タブキーでスキップ（IME入力中は無効）
+// タブキーでスキップ、Shift + タブで前に戻る（IME入力中は無効）
 elements.typingInput.addEventListener("keydown", (e) => {
   if (e.key === "Tab" && !gameState.isComposing) {
     e.preventDefault(); // デフォルトのタブ動作を防止
-    skipCurrentSentence();
+    
+    if (e.shiftKey) {
+      // Shift + Tab で前に戻る
+      goToPreviousSentence();
+    } else {
+      // Tab でスキップ
+      skipCurrentSentence();
+    }
   }
 });
 

@@ -543,6 +543,154 @@ input:checked + .slider:before {
   color: var(--text);
 }
 
+/* 分割設定 */
+.split-settings {
+  background-color: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+}
+
+.split-settings-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: var(--spacing-4);
+}
+
+.custom-split-section {
+  margin-top: var(--spacing-4);
+}
+
+.filter-section,
+.split-section {
+  margin-bottom: var(--spacing-6);
+  padding-bottom: var(--spacing-4);
+}
+
+.filter-section {
+  border-bottom: 1px solid var(--divider);
+}
+
+.subsection-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: var(--spacing-3);
+}
+
+.filter-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.filter-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-regex-input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+  margin-bottom: var(--spacing-2);
+}
+
+.custom-regex-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.custom-regex-input:disabled {
+  background-color: var(--surface-hover);
+  color: var(--text-light);
+  cursor: not-allowed;
+}
+
+.input-hint {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin: 0;
+}
+
+.preview-container {
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--divider);
+}
+
+.preview-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: var(--spacing-3);
+}
+
+.sentence-preview-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+}
+
+.sentence-preview-item {
+  padding: var(--spacing-2) var(--spacing-3);
+  border-bottom: 1px solid var(--divider);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  display: flex;
+  gap: var(--spacing-3);
+  transition: background-color var(--transition-fast);
+}
+
+.sentence-preview-item:last-child {
+  border-bottom: none;
+}
+
+.sentence-preview-item:hover {
+  background-color: var(--surface-hover);
+}
+
+.sentence-preview-number {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--text-light);
+  min-width: 2.5rem;
+}
+
+.sentence-preview-text {
+  color: var(--text);
+  word-break: break-all;
+}
+
+/* 前後の文章表示 */
+.context-text-before,
+.context-text-after {
+  padding: var(--spacing-3) var(--spacing-6);
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--text-lighter);
+  text-align: left;
+  min-height: 2rem;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+.context-text-before {
+  margin-bottom: var(--spacing-2);
+}
+
+.context-text-after {
+  margin-top: var(--spacing-2);
+}
+
 /* トースト通知 */
 .toast-container {
   position: fixed;
