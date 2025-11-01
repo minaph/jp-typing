@@ -719,7 +719,11 @@ function calculateProductivity() {
   
   if (totalKeystrokes === 0) return 0;
   
-  return (earnedChars / totalKeystrokes).toFixed(2);
+  const text = (earnedChars / totalKeystrokes).toFixed(2);
+  if (text[0] === '0') {
+    return text.slice(1);
+  }
+  return text;
 }
 
 // 入力テキストの検証 (パフォーマンス最適化版)
