@@ -347,6 +347,7 @@ function startGame() {
   gameState.correctTyped = 0;
   gameState.currentIndex = 0;
   gameState.skippedSentences = 0;
+  gameState.completedSentences = new Set();
 
   showScreen("game-screen");
 
@@ -422,6 +423,13 @@ function endGame() {
   clearInterval(gameState.timer);
   gameState.isRunning = false;
   elements.typingInput.disabled = true;
+
+  // 進捗データを削除（ゲーム完了時）
+  if (gameState.textHash) {
+    clearProgress(gameState.textHash);
+    // URLパラメータも削除
+    window.history.replaceState({}, "", window.location.pathname);
+  }
 
   // 結果画面の表示
   showScreen("result-screen");
@@ -555,14 +563,16 @@ elements.typingInput.addEventListener("input", () => {
     ) {
       gameState.correctTyped++;
     }
+    // 進捗を保存
+    saveProgress();
     // 入力の検証をすぐに実行
     checkInput();
   }
 });
 
-// タブキーでスキップ
+// タブキーでスキップ（IME入力中は無効）
 elements.typingInput.addEventListener("keydown", (e) => {
-  if (e.key === "Tab") {
+  if (e.key === "Tab" && !gameState.isComposing) {
     e.preventDefault(); // デフォルトのタブ動作を防止
     skipCurrentSentence();
   }
@@ -593,6 +603,14 @@ elements.typingInput.addEventListener("compositionend", (e) => {
     }
   }
 
+  // 進捗を保存
+  saveProgress();
+
   // 入力検証を即時実行（遅延なし）
   checkInput();
+});
+
+// ページ読み込み時にURLパラメータから進捗を復元
+window.addEventListener("DOMContentLoaded", () => {
+  loadFromURL();
 });
